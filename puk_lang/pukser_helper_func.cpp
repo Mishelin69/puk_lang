@@ -44,3 +44,23 @@ int64_t str_toi64(const std::string& s) {
 
 	return v;
 }
+
+float str_tof32(const std::string& s) {
+
+	float v = 0.0;
+	double mul = 0.0;
+	double pn = 1.0;
+
+	for (auto& c : s) {
+
+		if (c == '.') {
+			pn = -1.0;
+			continue;
+		}
+
+		v += (double)((c - '0') * pow(10, pn * mul));
+		mul += 1.0;
+	}
+
+	return v;
+}
