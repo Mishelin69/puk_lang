@@ -1,10 +1,18 @@
 #include "pukser.hpp"
 
+#if defined __GNUC__
+	#define start_testfile(n) \
+		n.parse("./test.puk");
+#else
+	#define start_testfile(n) \
+		n.parse("../test.puk");
+#endif
+
 int main() {
 
 	Pukser::Pukser puk;
 
-	puk.parse("./test.puk");
+	start_testfile(puk);
 
 	return 0;
 }

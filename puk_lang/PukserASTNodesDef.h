@@ -11,7 +11,7 @@ namespace Pukser {
 
 	class ExprAST {
 
-	private:
+	public:
 		Puxer::PuxerType type;
 
 	public:

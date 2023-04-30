@@ -75,7 +75,7 @@ double str_tof64(const std::string& s) {
 uint32_t str_tou32(const std::string& s) {
 
 	size_t strt = 0;
-	int32_t v = 0;
+	uint32_t v = 0;
 	uint32_t mul = 1;
 
 	for (; strt < s.length(); ++strt) {
@@ -90,7 +90,7 @@ uint32_t str_tou32(const std::string& s) {
 uint64_t str_tou64(const std::string& s) {
 
 	size_t strt = 0;
-	int64_t v = 0;
+	uint64_t v = 0;
 	uint32_t mul = 1;
 
 	for (; strt < s.length(); ++strt) {

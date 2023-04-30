@@ -5,7 +5,7 @@ namespace Puxer {
 
 	struct PuxerTokenResponse {
 
-		PuxerToken token;
+		int token;
 		PuxerIdentifier ident;
 
 	};

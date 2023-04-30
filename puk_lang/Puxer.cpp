@@ -6,9 +6,11 @@
     #define open_file_portable(f_ptr, name, mode, code_addr) \
         *f_ptr = fopen(name, mode);\
         *code_addr = 0;
+    #define error_code error_t
 #else
     #define open_file_portable(f_ptr, name, mode, code_addr)\
         *code_addr = fopen_s(&this->fs, filename, "r");
+    #define error_code errno_t
 #endif
 
 static const char* VALID_INTEGERS[6] = { "i32", "i64", "u32", "u64", "f32", "f64 "};
@@ -28,7 +30,7 @@ Puxer::Puxer::~Puxer() {
 
 int Puxer::Puxer::open_file(const char* filename) {
 
-	error_t code = 0;
+	error_code code = 0;
     open_file_portable(&this->fs, filename, "r", &code);
 
     if (!this->fs) {
@@ -71,9 +73,9 @@ bool Puxer::Puxer::PuxerHandleNumber(std::string& s, PuxerIdentifier& i) {
 
 	uint8_t num_len = 0;
 	bool floating = false;
-	PuxerType type;
 	size_t j = 0;
 
+    //
     for (; j < s.length() && s[j] != '_'; ++j) {
 
         if (isalpha(s[j])) {
@@ -215,10 +217,7 @@ Puxer::PuxerTokenResponse Puxer::Puxer::get_token() {
         int last_char = this->identifier_queue.front();
         this->identifier_queue.pop();
 
-        i.i_name = last_char;
-        i.var_type = PuxerCustomType{ "", PuxerType::PuxerUnknown, sizeof(last_char) };
-
-        return PuxerTokenResponse{ PuxerToken::t_identifier, i };
+        return PuxerTokenResponse{ last_char, i };
     }
 
     char last_char = ' ';
@@ -391,10 +390,5 @@ number_error:
         return PuxerTokenResponse{ PuxerToken::t_eof, i };
     }
 
-    std::string s;
-
-    i.i_name = last_char;
-    i.var_type = PuxerCustomType{ "", PuxerType::PuxerUnknown, sizeof(last_char) };
-
-    return PuxerTokenResponse{ PuxerToken::t_identifier, i };
+    return PuxerTokenResponse{ last_char, i };
 }

@@ -2,8 +2,9 @@
 #include "Puxer.h"
 #include "pukser_helper_func.h"
 
-void Pukser::Pukser::log_error(const char* s) {
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::log_error(const char* s) {
 	fprintf(stderr, "Error: %s", s);
+	return nullptr;
 }
 
 void Pukser::Pukser::parse(const char* fn) {
@@ -36,6 +37,58 @@ void Pukser::Pukser::parse(const char* fn) {
 
 }
 
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_paren(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+
+	auto v = parse_expression(pux, res);
+
+	if (!v)
+		return nullptr;
+
+	if (res.token != ')')
+		return log_error("expected ')'");
+
+	return v;
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+
+	std::string name_ref = res.ident.i_name;
+
+	auto tok = pux.get_token();
+
+	//variable ref otherwise a func call
+	if (res.token != '(') {
+		return std::make_unique<VariableExprAST>(name_ref);
+	}
+
+	res = pux.get_token();
+	std::vector<std::unique_ptr<ExprAST>> args;
+
+	if (res.token != ')') {
+
+		while (1) {
+
+			if (auto arg = parse_expression(pux, res)) {
+				args.push_back(std::move(arg));
+			}
+			else {
+				return nullptr;
+			}
+			
+			tok = pux.get_token();
+
+			if (tok.token == ')')
+				break;
+
+			if (tok.token != ',')
+				return log_error("Expected ')' or ',' in argument list");
+		}
+	}
+
+	return std::make_unique<CallExprAST>(name_ref, std::move(args));
+}
+
+
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerTokenResponse& res) {
 
 	std::unique_ptr<ExprAST> result;
@@ -44,10 +97,32 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerToken
 
 	case Puxer::PuxerI32:
 		result = std::make_unique<I32ExprAST>(str_toi32(res.ident.value));
+		result.get()->type = Puxer::PuxerI32;
 		break;
 
 	case Puxer::PuxerI64:
 		result = std::make_unique<I64ExprAST>(str_toi64(res.ident.value));
+		result.get()->type = Puxer::PuxerI64;
+		break;
+
+	case Puxer::PuxerF32:
+		result = std::make_unique<F32ExprAST>(str_tof32(res.ident.value));
+		result.get()->type = Puxer::PuxerF32;
+		break;
+
+	case Puxer::PuxerF64:
+		result = std::make_unique<F64ExprAST>(str_tof64(res.ident.value));
+		result.get()->type = Puxer::PuxerF64;
+		break;
+
+	case Puxer::PuxerU32:
+		result = std::make_unique<U32ExprAST>(str_tou32(res.ident.value));
+		result.get()->type = Puxer::PuxerU32;
+		break;
+
+	case Puxer::PuxerU64:
+		result = std::make_unique<U64ExprAST>(str_tou64(res.ident.value));
+		result.get()->type = Puxer::PuxerU64;
 		break;
 
     default:
