@@ -1,4 +1,15 @@
 #include "Puxer.h"
+#include <cstdio>
+#include <cstring>
+
+#if defined __GNUC__
+    #define open_file_portable(f_ptr, name, mode, code_addr) \
+        *f_ptr = fopen(name, mode);\
+        *code_addr = 0;
+#else
+    #define open_file_portable(f_ptr, name, mode, code_addr)\
+        *code_addr = fopen_s(&this->fs, filename, "r");
+#endif
 
 static const char* VALID_INTEGERS[6] = { "i32", "i64", "u32", "u64", "f32", "f64 "};
 
@@ -17,7 +28,13 @@ Puxer::Puxer::~Puxer() {
 
 int Puxer::Puxer::open_file(const char* filename) {
 
-	errno_t code = fopen_s(&this->fs, filename, "r");
+	error_t code = 0;
+    open_file_portable(&this->fs, filename, "r", &code);
+
+    if (!this->fs) {
+        std::cout << "Error opening file: " << filename << std::endl;
+        exit(-1);
+    }
 	
 	return code;
 }
@@ -54,331 +71,330 @@ bool Puxer::Puxer::PuxerHandleNumber(std::string& s, PuxerIdentifier& i) {
 
 	uint8_t num_len = 0;
 	bool floating = false;
-	bool is_neg = false;
 	PuxerType type;
 	size_t j = 0;
 
-	//check if number exceeds max digits 64 bit integer can hold
-	if (s[0] == '-') {
-		if (s.length() > 21) {
-			return true;
-		}
-		
-		is_neg = true;
-		++j;
-	}
-	else {
-		if (s.length() > 20) {
-			return true;
-		}
-	}
+    for (; j < s.length() && s[j] != '_'; ++j) {
 
-	for (; j < s.length() && s[j] != '_'; ++j) {
+        if (isalpha(s[j])) {
+            return true;
+        }
 
-		if (isalpha(s[j])) {
-			return true;
-		}
+        else if (s[j] == '.' && floating) {
+            return true;
 
-		if (s[j] == '.') {
-			floating = true;
-		}
+        }
 
-		else if (s[j] == '.' && floating) {
-			return true;
-		}
+        else if (s[j] == '.') {
+            floating = true;
+            num_len += 1;
+        }
 
-		num_len += 1;
-	}
+        else
+            num_len += 1;
+    }
 
-	i.value = s.substr(0, num_len);
+    i.value = s.substr(0, num_len);
 
-	if (j >= s.length()) 
-		return false;
+    //check for bigger numbers than 64 bit can hold
+    if (num_len > 20) {
+        return true;
+    }
 
-	//offset number part from the type part
-	const char* type_string = s.c_str() + num_len;
+    if (j >= s.length()) 
+        return false;
 
-	if (strcmp(type_string, "i32")) {
-		
-		if (floating) {
+    //offset number part from the type part
+    const char* type_string = s.c_str() + num_len;
 
-			std::cout << "Mismatched types";
-			return true;
-		}
+    if (strcmp(type_string, "i32")) {
 
-		//auto convert to bigger number
-		if (num_len > 10) {
-			i.var_type.bytes_size = 64;
-			i.var_type.type = PuxerType::PuxerI64;
-		}
-		else {
-			i.var_type.bytes_size = 32;
-			i.var_type.type = PuxerType::PuxerI32;
-		}
+        if (floating) {
 
-		return false;
-	}
+            std::cout << "Mismatched types";
+            return true;
+        }
 
-	if (strcmp(type_string, "u32")) {
+        //auto convert to bigger number
+        if (num_len > 10) {
+            i.var_type.bytes_size = 64;
+            i.var_type.type = PuxerType::PuxerI64;
+        }
+        else {
+            i.var_type.bytes_size = 32;
+            i.var_type.type = PuxerType::PuxerI32;
+        }
 
-		if (floating || is_neg) {
+        return false;
+    }
 
-			std::cout << "Mismatched types";
-			return true;
-		}
+    if (strcmp(type_string, "u32")) {
 
-		//auto convert to bigger number
-		if (num_len > 10) {
-			i.var_type.bytes_size = 64;
-			i.var_type.type = PuxerType::PuxerU64;
-		}
-		else {
-			i.var_type.bytes_size = 32;
-			i.var_type.type = PuxerType::PuxerU32;
-		}
+        if (floating) {
 
-		return false;
-	}
+            std::cout << "Mismatched types";
+            return true;
+        }
 
-	if (strcmp(type_string, "f32")) {
+        //auto convert to bigger number
+        if (num_len > 10) {
+            i.var_type.bytes_size = 64;
+            i.var_type.type = PuxerType::PuxerU64;
+        }
+        else {
+            i.var_type.bytes_size = 32;
+            i.var_type.type = PuxerType::PuxerU32;
+        }
 
-		//auto convert to bigger number
-		if (num_len > 10) {
-			i.var_type.bytes_size = 64;
-			i.var_type.type = PuxerType::PuxerF64;
-		}
-		else {
-			i.var_type.bytes_size = 32;
-			i.var_type.type = PuxerType::PuxerF32;
-		}
+        return false;
+    }
 
-		return false;
-	}
+    if (strcmp(type_string, "f32")) {
 
-	if (strcmp(type_string, "f64")) {
+        //auto convert to bigger number
+        if (num_len > 10) {
+            i.var_type.bytes_size = 64;
+            i.var_type.type = PuxerType::PuxerF64;
+        }
+        else {
+            i.var_type.bytes_size = 32;
+            i.var_type.type = PuxerType::PuxerF32;
+        }
 
-		i.var_type.bytes_size = 64;
-		i.var_type.type = PuxerType::PuxerF64;
+        return false;
+    }
 
-		return false;
-	}
+    if (strcmp(type_string, "f64")) {
 
-	if (strcmp(type_string, "i64")) {
+        i.var_type.bytes_size = 64;
+        i.var_type.type = PuxerType::PuxerF64;
 
-		if (floating) {
+        return false;
+    }
 
-			std::cout << "Mismatched types";
-			return true;
-		}
+    if (strcmp(type_string, "i64")) {
 
-		i.var_type.bytes_size = 64;
-		i.var_type.type = PuxerType::PuxerF64;
+        if (floating) {
 
-		return false;
-	}
+            std::cout << "Mismatched types";
+            return true;
+        }
 
-	if (strcmp(type_string, "u64")) {
+        i.var_type.bytes_size = 64;
+        i.var_type.type = PuxerType::PuxerF64;
 
-		if (floating || is_neg) {
-			std::cout << "Mismatched types";
-			return true;
-		}
+        return false;
+    }
 
-		i.var_type.bytes_size = 64;
-		i.var_type.type = PuxerType::PuxerF64;
+    if (strcmp(type_string, "u64")) {
 
-		return false;
-	}
+        if (floating) {
+            std::cout << "Mismatched types";
+            return true;
+        }
+
+        i.var_type.bytes_size = 64;
+        i.var_type.type = PuxerType::PuxerF64;
+
+        return false;
+    }
+
+    return true;
 }
 
 Puxer::PuxerTokenResponse Puxer::Puxer::get_token() {
 
-	if (!this->identifier_queue.empty()) {
-		PuxerIdentifier i;
+    if (!this->fs) {
+        std::cout << "Invalid file"; 
+        exit(-1);
+    }
 
-		int last_char = this->identifier_queue.front();
-		this->identifier_queue.pop();
+    if (!this->identifier_queue.empty()) {
+        PuxerIdentifier i;
 
-		i.i_name = last_char;
-		i.var_type = PuxerCustomType{ "", PuxerType::PuxerUnknown, sizeof(last_char) };
+        int last_char = this->identifier_queue.front();
+        this->identifier_queue.pop();
 
-		return PuxerTokenResponse{ PuxerToken::t_identifier, i };
-	}
+        i.i_name = last_char;
+        i.var_type = PuxerCustomType{ "", PuxerType::PuxerUnknown, sizeof(last_char) };
 
-	char last_char = ' ';
-	
-	//skip whitespaces
-	while (isspace(last_char)) {
-		last_char = fgetc(this->fs);
-	}
+        return PuxerTokenResponse{ PuxerToken::t_identifier, i };
+    }
 
-	//build the identifier
-	if (isalpha(last_char)) {
+    char last_char = ' ';
 
-		std::string identifier;
-		identifier += last_char;
+    //skip whitespaces
+    while (isspace(last_char)) {
+        last_char = fgetc(this->fs);
+    }
 
-		while (isalnum(last_char = fgetc(this->fs))) {
-			identifier += last_char;
-		}
+    //build the identifier
+    if (isalpha(last_char)) {
 
-		if (!isspace(last_char) && last_char != '\n' && last_char != '\r')
-			this->identifier_queue.push(last_char);
+        std::string identifier;
+        identifier += last_char;
 
-		//figure out what kind of puk token this is and assign value to it
-		auto i = PuxerIdentifier{};
-		auto token = PuxerHandleIndentifier(identifier, i);
+        while (isalnum(last_char = fgetc(this->fs))) {
+            identifier += last_char;
+        }
 
-		switch (token) {
+        if (!isspace(last_char) && last_char != '\n' && last_char != '\r')
+            this->identifier_queue.push(last_char);
 
-		case PuxerToken::t_structdef:
-			return PuxerTokenResponse{ PuxerToken::t_structdef, i };
-			break;
+        //figure out what kind of puk token this is and assign value to it
+        auto i = PuxerIdentifier{};
+        auto token = PuxerHandleIndentifier(identifier, i);
 
-		case PuxerToken::t_valdef:
-			return PuxerTokenResponse{ PuxerToken::t_valdef, i };
-			break;
+        switch (token) {
 
-		case PuxerToken::t_identifier:
-			return PuxerTokenResponse{ PuxerToken::t_identifier, i };
-			break;
+            case PuxerToken::t_structdef:
+                return PuxerTokenResponse{ PuxerToken::t_structdef, i };
+                break;
 
-		case PuxerToken::t_fndef:
-			return PuxerTokenResponse{ PuxerToken::t_fndef, i };
-			break;
+            case PuxerToken::t_valdef:
+                return PuxerTokenResponse{ PuxerToken::t_valdef, i };
+                break;
 
-		case PuxerToken::t_for:
-			return PuxerTokenResponse{ PuxerToken::t_for, i };
-			break;
+            case PuxerToken::t_identifier:
+                return PuxerTokenResponse{ PuxerToken::t_identifier, i };
+                break;
 
-		case PuxerToken::t_while:
-			return PuxerTokenResponse{ PuxerToken::t_while, i };
-			break;
+            case PuxerToken::t_fndef:
+                return PuxerTokenResponse{ PuxerToken::t_fndef, i };
+                break;
 
-		case PuxerToken::t_foreach:
-			return PuxerTokenResponse{ PuxerToken::t_foreach, i };
-			break;
+            case PuxerToken::t_for:
+                return PuxerTokenResponse{ PuxerToken::t_for, i };
+                break;
 
-		case PuxerToken::t_crackdef:
-			return PuxerTokenResponse{ PuxerToken::t_crackdef, i };
-			break;
+            case PuxerToken::t_while:
+                return PuxerTokenResponse{ PuxerToken::t_while, i };
+                break;
 
-		default:
-			break;
-		}
-	}
+            case PuxerToken::t_foreach:
+                return PuxerTokenResponse{ PuxerToken::t_foreach, i };
+                break;
 
-	if (isdigit(last_char) || last_char == '.') {
+            case PuxerToken::t_crackdef:
+                return PuxerTokenResponse{ PuxerToken::t_crackdef, i };
+                break;
 
-		PuxerIdentifier i;
-		std::string num_string;
+            default:
+                break;
+        }
+    }
 
-		i.var_type.type = PuxerType::PuxerNumber;
+    if (isdigit(last_char) || last_char == '.') {
 
-		bool explicit_type = false;
-		bool invalid_num = false;
+        PuxerIdentifier i;
+        std::string num_string;
 
-		//allow this king of notation 100_usize, gives type
-		while (isdigit(last_char) || last_char == '.' || last_char == '_' || (explicit_type && isalpha(last_char))) {
+        i.var_type.type = PuxerType::PuxerNumber;
 
-			if (last_char == '_' && !explicit_type) {
-				explicit_type = true;
-			}
-			//not valid syntax ... 1_usize_usize
-			else if (last_char == '_' && explicit_type) {
-				break;
-			}
+        bool explicit_type = false;
+        bool invalid_num = false;
 
-			num_string += last_char;
-			last_char = fgetc(this->fs);
-		}
+        //allow this king of notation 100_usize, gives type
+        while (isdigit(last_char) || last_char == '.' || last_char == '_' || (explicit_type && isalpha(last_char))) {
 
-		if (invalid_num) {
+            if (last_char == '_' && !explicit_type) {
+                explicit_type = true;
+            }
+            //not valid syntax ... 1_usize_usize
+            else if (last_char == '_' && explicit_type) {
+                break;
+            }
 
-			//read it the rest until space or EOF is found 
-			while (!isspace(last_char) && last_char != EOF) {
+            num_string += last_char;
+            last_char = fgetc(this->fs);
+        }
 
-				num_string += last_char;
-				last_char = fgetc(this->fs);
-			}
+        if (invalid_num) {
 
-			goto number_error;
-		}
+            //read it the rest until space or EOF is found 
+            while (!isspace(last_char) && last_char != EOF) {
 
-		if (!isspace(last_char) && last_char != '\n' && last_char != '\r')
-			this->identifier_queue.push(last_char);
+                num_string += last_char;
+                last_char = fgetc(this->fs);
+            }
 
-		invalid_num = PuxerHandleNumber(num_string, i);
+            goto number_error;
+        }
 
-		if (invalid_num) {
+        if (!isspace(last_char) && last_char != '\n' && last_char != '\r')
+            this->identifier_queue.push(last_char);
 
-			//read it the rest until space or EOF is found 
-			while (!isspace(last_char) && last_char != EOF) {
+        invalid_num = PuxerHandleNumber(num_string, i);
 
-				num_string += last_char;
-				last_char = fgetc(this->fs);
-			}
+        if (invalid_num) {
 
-			goto number_error;
-		}
+            //read it the rest until space or EOF is found 
+            while (!isspace(last_char) && last_char != EOF) {
 
-		return PuxerTokenResponse{ PuxerToken::t_number, i };
+                num_string += last_char;
+                last_char = fgetc(this->fs);
+            }
 
-		//===============================
-	number_error:
+            goto number_error;
+        }
 
-		PuxerIdentifier num_i;
-		num_i.value = num_string;
+        return PuxerTokenResponse{ PuxerToken::t_number, i };
 
-		return PuxerTokenResponse{ PuxerToken::t_invalid_number, num_i };
-	}
+        //===============================
+number_error:
 
-	//const strings
-	if (last_char == '"') {
+        PuxerIdentifier num_i;
+        num_i.value = num_string;
 
-		PuxerIdentifier i;
-		std::string s;
+        return PuxerTokenResponse{ PuxerToken::t_invalid_number, num_i };
+    }
 
-		last_char = fgetc(this->fs);
+    //const strings
+    if (last_char == '"') {
 
-		while (last_char != '"' && last_char != EOF) {
-			s += last_char;
-			last_char = fgetc(this->fs);
-		}
+        PuxerIdentifier i;
+        std::string s;
 
-		i.var_type.type = PuxerConstString;
-		i.value = s;
+        last_char = fgetc(this->fs);
 
-		return PuxerTokenResponse { PuxerToken::t_const_str, i};
-	}
+        while (last_char != '"' && last_char != EOF) {
+            s += last_char;
+            last_char = fgetc(this->fs);
+        }
 
-	//comments
-	if (last_char == '/') {
+        i.var_type.type = PuxerConstString;
+        i.value = s;
 
-		auto next_char = fgetc(this->fs);
-		PuxerIdentifier i;
+        return PuxerTokenResponse { PuxerToken::t_const_str, i};
+    }
 
-		//found comment
-		if (next_char == '/') {
-			while (last_char != EOF && last_char != '\n' && last_char != '\r')
-				last_char = fgetc(this->fs);
-		}
+    //comments
+    if (last_char == '/') {
 
-		if (last_char != EOF) {
-			return this->get_token();
-		}
-	}
+        auto next_char = fgetc(this->fs);
+        PuxerIdentifier i;
 
-	PuxerIdentifier i;
+        //found comment
+        if (next_char == '/') {
+            while (last_char != EOF && last_char != '\n' && last_char != '\r')
+                last_char = fgetc(this->fs);
+        }
 
-	if (last_char == EOF) {
-		return PuxerTokenResponse{ PuxerToken::t_eof, i };
-	}
+        if (last_char != EOF) {
+            return this->get_token();
+        }
+    }
 
-	std::string s;
+    PuxerIdentifier i;
 
-	i.i_name = last_char;
-	i.var_type = PuxerCustomType{ "", PuxerType::PuxerUnknown, sizeof(last_char) };
+    if (last_char == EOF) {
+        return PuxerTokenResponse{ PuxerToken::t_eof, i };
+    }
 
-	return PuxerTokenResponse{ PuxerToken::t_identifier, i };
+    std::string s;
+
+    i.i_name = last_char;
+    i.var_type = PuxerCustomType{ "", PuxerType::PuxerUnknown, sizeof(last_char) };
+
+    return PuxerTokenResponse{ PuxerToken::t_identifier, i };
 }

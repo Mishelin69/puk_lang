@@ -1,7 +1,6 @@
-#pragma once 
-
 #include <stdint.h>
 #include <string>
+#include <cmath>
 
 int32_t str_toi32(const std::string& s) {
 
@@ -15,7 +14,7 @@ int32_t str_toi32(const std::string& s) {
 		strt = 1;
 	}
 
-	for (strt; strt < s.length(); ++strt) {
+	for (; strt < s.length(); ++strt) {
 		v *= mul;
 		v += s[strt] - '0';
 		mul *= 10;
@@ -36,7 +35,7 @@ int64_t str_toi64(const std::string& s) {
 		strt = 1;
 	}
 
-	for (strt; strt < s.length(); ++strt) {
+	for (; strt < s.length(); ++strt) {
 		v *= mul;
 		v += s[strt] - '0';
 		mul *= 10;
@@ -48,6 +47,26 @@ int64_t str_toi64(const std::string& s) {
 float str_tof32(const std::string& s) {
 
 	float v = 0.0;
+	double mul = 0.0;
+	double pn = 1.0;
+
+	for (auto& c : s) {
+
+		if (c == '.') {
+			pn = -1.0;
+			continue;
+		}
+
+		v += (double)((c - '0') * pow(10, pn * mul));
+		mul += 1.0;
+	}
+
+	return v;
+}
+
+double str_tof64(const std::string& s) {
+
+	double v = 0.0;
 	double mul = 0.0;
 	double pn = 1.0;
 

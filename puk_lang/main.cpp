@@ -4,7 +4,7 @@ int main() {
 
 	Pukser::Pukser puk;
 
-	puk.parse("../test.puk");
+	puk.parse("./test.puk");
 
 	return 0;
 }

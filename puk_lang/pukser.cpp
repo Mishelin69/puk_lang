@@ -9,7 +9,6 @@ void Pukser::Pukser::log_error(const char* s) {
 void Pukser::Pukser::parse(const char* fn) {
 
 	Puxer::Puxer pux;
-
 	auto res = pux.open_file(fn);
 
 	if (res != 0) {
@@ -19,8 +18,8 @@ void Pukser::Pukser::parse(const char* fn) {
 	auto token = pux.get_token();
 
 	while (token.token != Puxer::t_eof) {
-
-		token = pux.get_token();
+        
+        std::cout << "TOKEN(" << token.token << "): " << token.ident.i_name << std::endl;
 
 		switch (token.token) {
 
@@ -31,6 +30,8 @@ void Pukser::Pukser::parse(const char* fn) {
 		default:
 			break;
 		}
+
+		token = pux.get_token();
 	}
 
 }
@@ -49,8 +50,9 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerToken
 		result = std::make_unique<I64ExprAST>(str_toi64(res.ident.value));
 		break;
 
+    default:
+        break;
 	}
-
 
 	return std::move(result);
 }
