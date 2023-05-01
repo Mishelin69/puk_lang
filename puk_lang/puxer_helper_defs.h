@@ -22,6 +22,7 @@ namespace Puxer {
 		PuxerCustom,
 		PuxerUnknown,
 		PuxerNumber,
+        PuxerBadNumber,
 		PuxerConstString
 	};
 

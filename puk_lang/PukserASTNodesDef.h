@@ -18,6 +18,16 @@ namespace Pukser {
 		virtual ~ExprAST() = default;
 	};
 
+    class UknownExprAST: public ExprAST {
+
+    public:
+        std::string val;
+
+    public:
+        UknownExprAST(std::string val) :
+            val(val) { }
+    };
+
 	/*
 	* Number Nodes
 	*/

@@ -1,10 +1,32 @@
 #include "pukser.hpp"
 #include "Puxer.h"
 #include "pukser_helper_func.h"
+#include "puxer_helper_defs.h"
+#include <memory>
 
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::log_error(const char* s) {
 	fprintf(stderr, "Error: %s", s);
 	return nullptr;
+}
+
+int Pukser::Pukser::handle_token_precedence(Puxer::PuxerTokenResponse& res) {
+
+    if (!isascii(res.token)) {
+        return -1;
+    }
+
+    int prec = BinopPrecedence[res.token];
+    if (prec <= 0) return -1;
+    return prec;
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_expression(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+
+    auto LHS = parse_primary(pux, res);
+
+    if (!LHS) 
+        return nullptr;
+
 }
 
 void Pukser::Pukser::parse(const char* fn) {
@@ -35,6 +57,28 @@ void Pukser::Pukser::parse(const char* fn) {
 		token = pux.get_token();
 	}
 
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_primary(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+
+    switch (res.token) {
+
+        case Puxer::t_number:
+            return handle_number(res);
+            break;
+
+        case Puxer::t_identifier:
+            return parse_identifier(pux, res);
+            break;
+
+        case '(':
+            return parse_paren(pux, res = pux.get_token());
+            break;
+
+        default:
+            return log_error("Unknown token, expecting expression");
+            break;
+    }
 }
 
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_paren(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
@@ -125,7 +169,13 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerToken
 		result.get()->type = Puxer::PuxerU64;
 		break;
 
+    case Puxer::PuxerUnknown:
+        result = std::make_unique<UknownExprAST>(res.ident.value);
+        result.get()->type = Puxer::PuxerUnknown;
+        break;
+
     default:
+        result.get()->type = Puxer::PuxerBadNumber;
         break;
 	}
 
