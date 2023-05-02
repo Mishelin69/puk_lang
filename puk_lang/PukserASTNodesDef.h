@@ -111,8 +111,8 @@ namespace Pukser {
 		std::unique_ptr<ExprAST> &LHS, &RHS;
 
 	public:
-		BinaryExprAST(char op, std::unique_ptr<ExprAST> &LHS,
-			std::unique_ptr<ExprAST> &RHS)
+		BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
+			std::unique_ptr<ExprAST> RHS)
 			: op(op), LHS(LHS), RHS(RHS) {}
 	};
 
@@ -123,7 +123,7 @@ namespace Pukser {
 		std::vector<std::unique_ptr<ExprAST>> args;
 
 	public:
-		CallExprAST(const std::string& callee,
+		CallExprAST(const std::string callee,
 			std::vector<std::unique_ptr<ExprAST>> args)
 			: callee(callee), args(std::move(args)) {}
 	};

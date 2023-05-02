@@ -75,7 +75,6 @@ bool Puxer::Puxer::PuxerHandleNumber(std::string& s, PuxerIdentifier& i) {
 	bool floating = false;
 	size_t j = 0;
 
-    //
     for (; j < s.length() && s[j] != '_'; ++j) {
 
         if (isalpha(s[j])) {
@@ -103,8 +102,9 @@ bool Puxer::Puxer::PuxerHandleNumber(std::string& s, PuxerIdentifier& i) {
         return true;
     }
 
-    if (j >= s.length()) 
+    if (j >= s.length()) {
         return false;
+    }
 
     //offset number part from the type part
     const char* type_string = s.c_str() + num_len;
