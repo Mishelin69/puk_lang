@@ -26,7 +26,8 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_expression(Puxer::Puxer& 
 
     if (!LHS) 
         return nullptr;
-
+    
+    return parse_binary_ops_rhs(res, 0, std::move(LHS));
 }
 
 void Pukser::Pukser::parse(const char* fn) {

@@ -25,6 +25,7 @@ namespace Pukser {
 		std::unique_ptr<ExprAST> parse_paren(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> parse_identifier(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> parse_primary(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
+        std::unique_ptr<ExprAST> parse_binary_ops_rhs(Puxer::PuxerTokenResponse& res, int prec, std::unique_ptr<ExprAST> LHS);
 	};
 
 }
