@@ -49,7 +49,8 @@ std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(Puxer::Pux
     auto ret = std::make_unique<PrototypeAST>(fn_name, std::move(arg_names));
 
     std::string ret_i;
-    auto p = pux.get_token();
+    Puxer::PuxerTokenResponse p;
+    p = pux.get_token();
 
     if (p.token != '=') {
         std::cout << "Error: expected '=' found " << (char)p.token << " instead!" << std::endl;
@@ -66,8 +67,13 @@ std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(Puxer::Pux
     //type
     p = pux.get_token();
 
+    if (p.token != Puxer::t_identifier) {
+        std::cout << "expected return type, found: " << p.token << std::endl;;
+        return nullptr;
+    }
+
     if (p.ident.var_type.type == Puxer::PuxerCustom) {
-        ret_i += p.ident.var_type.name;
+       // += p.ident.var_type.name;
     }
 
     return std::move(ret);
@@ -155,7 +161,8 @@ void Pukser::Pukser::parse(const char* fn) {
         std::cout << "Opening file: " << fn << " failed!";
     }
 
-    auto token = pux.get_token();
+    Puxer::PuxerTokenResponse token;
+    token = pux.get_token();
 
     while (token.token != Puxer::t_eof) {
 
@@ -221,7 +228,8 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(Puxer::Puxer& 
 
     std::string name_ref = res.ident.i_name;
 
-    auto tok = pux.get_token();
+    Puxer::PuxerTokenResponse tok;
+    tok = pux.get_token();
 
     //variable ref otherwise a func call
     if (res.token != '(') {

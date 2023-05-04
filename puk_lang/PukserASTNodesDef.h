@@ -108,12 +108,12 @@ namespace Pukser {
 
 	private:
 		char op;
-		std::unique_ptr<ExprAST> &LHS, &RHS;
+		std::unique_ptr<ExprAST> LHS, RHS;
 
 	public:
 		BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
 			std::unique_ptr<ExprAST> RHS)
-			: op(op), LHS(LHS), RHS(RHS) {}
+			: op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
 	};
 
 	class CallExprAST : public ExprAST {
@@ -129,12 +129,14 @@ namespace Pukser {
 	};
 
 	class PrototypeAST {
+
+        Puxer::PuxerCustomType type;
 		std::string name;
 		std::vector<std::string> args;
 
 	public:
 		PrototypeAST(const std::string& name, std::vector<std::string> args)
-			: name(name), args(std::move(args)) {}
+			: name(name), args(std::move(args)), type(std::string(), Puxer::PuxerUnknown, 0) {}
 
 		const std::string& getName() const { return name; }
 	};

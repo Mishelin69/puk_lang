@@ -23,7 +23,9 @@ namespace Puxer {
 		PuxerUnknown,
 		PuxerNumber,
         PuxerBadNumber,
-		PuxerConstString
+		PuxerConstString,
+
+        PuxerNone,
 	};
 
 	enum PuxerToken {
@@ -55,6 +57,13 @@ namespace Puxer {
 		std::string name;
 		PuxerType type;
 		size_t bytes_size;
+
+        PuxerCustomType() = default;
+        PuxerCustomType(PuxerCustomType& other) = default;
+        ~PuxerCustomType() = default;
+
+        PuxerCustomType(std::string name, PuxerType type, size_t bytes_size):
+            name(name), type(type), bytes_size(bytes_size) {}
 
 	};
 

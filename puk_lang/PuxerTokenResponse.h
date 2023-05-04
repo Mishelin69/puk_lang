@@ -8,7 +8,10 @@ namespace Puxer {
 		int token;
 		PuxerIdentifier ident;
 
+        PuxerTokenResponse() = default;
+        PuxerTokenResponse(PuxerTokenResponse& other) = default;
+        ~PuxerTokenResponse() = default;
+
 	};
 
 }
-
