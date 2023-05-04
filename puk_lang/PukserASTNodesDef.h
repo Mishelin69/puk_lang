@@ -143,11 +143,11 @@ namespace Pukser {
 
 	class FunctionAST {
 		std::unique_ptr<PrototypeAST> proto;
-		std::unique_ptr<ExprAST> body;
+		std::vector<std::unique_ptr<ExprAST>> body;
 
 	public:
 		FunctionAST(std::unique_ptr<PrototypeAST> proto,
-			std::unique_ptr<ExprAST> body)
+			std::vector<std::unique_ptr<ExprAST>> body)
 			: proto(std::move(proto)), body(std::move(body)) {}
 	};
 

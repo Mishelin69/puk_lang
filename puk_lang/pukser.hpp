@@ -20,9 +20,12 @@ namespace Pukser {
 
 		std::unique_ptr<ExprAST> handle_number(Puxer::PuxerTokenResponse& res);
         int handle_token_precedence(Puxer::PuxerTokenResponse& res);
+		void handle_toplevel(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
+		void handle_functiondef(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 
 		std::unique_ptr<ExprAST> parse_expression(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> parse_paren(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
+		void parse_curly(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res, std::vector<std::unique_ptr<ExprAST>>& body);
 		std::unique_ptr<ExprAST> parse_identifier(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> parse_primary(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
         std::unique_ptr<ExprAST> parse_binary_ops_rhs(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res, int prec, std::unique_ptr<ExprAST> LHS);

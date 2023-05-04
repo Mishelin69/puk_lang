@@ -1,4 +1,4 @@
-fn main => None {
+fn main() => None {
 
 	let puk = -56679_i32;
 	let hm = "AJAJA";

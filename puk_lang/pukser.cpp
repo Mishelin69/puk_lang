@@ -4,6 +4,42 @@
 #include "puxer_helper_defs.h"
 #include <memory>
 
+void Pukser::Pukser::parse(const char* fn) {
+
+    Puxer::Puxer pux;
+    auto res = pux.open_file(fn);
+
+    if (res != 0) {
+        std::cout << "Opening file: " << fn << " failed!";
+    }
+
+    Puxer::PuxerTokenResponse token;
+    token = pux.get_token();
+
+    while (token.token != Puxer::t_eof) {
+
+        //std::cout << "TOKEN(" << token.token << "): " << token.ident.i_name << std::endl;
+
+        switch (token.token) {
+
+        case Puxer::t_number:
+            handle_number(token);
+            break;
+
+        case Puxer::t_fndef:
+            parse_definition(pux, token);
+            break;
+
+        default:
+            parse_toplevel(pux, token);
+            break;
+        }
+
+        //token = pux.get_token();
+    }
+
+}
+
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::log_error(const char* s) {
 	fprintf(stderr, "Error: %s", s);
 	return nullptr;
@@ -20,7 +56,75 @@ int Pukser::Pukser::handle_token_precedence(Puxer::PuxerTokenResponse& res) {
     return prec;
 }
 
-std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+void Pukser::Pukser::handle_toplevel(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+
+    if (parse_toplevel(pux, res)) {
+        fprintf(stderr, "Parsed top level definition");
+    }
+
+}
+
+void Pukser::Pukser::handle_functiondef(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+
+    if (parse_definition(pux, res)) {
+        fprintf(stderr, "Parsed top level definition");
+    }
+
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerTokenResponse& res) {
+
+    std::unique_ptr<ExprAST> result;
+
+    switch (res.ident.var_type.type) {
+
+    case Puxer::PuxerI32:
+        result = std::make_unique<I32ExprAST>(str_toi32(res.ident.value));
+        result.get()->type = Puxer::PuxerI32;
+        break;
+
+    case Puxer::PuxerI64:
+        result = std::make_unique<I64ExprAST>(str_toi64(res.ident.value));
+        result.get()->type = Puxer::PuxerI64;
+        break;
+
+    case Puxer::PuxerF32:
+        result = std::make_unique<F32ExprAST>(str_tof32(res.ident.value));
+        result.get()->type = Puxer::PuxerF32;
+        break;
+
+    case Puxer::PuxerF64:
+        result = std::make_unique<F64ExprAST>(str_tof64(res.ident.value));
+        result.get()->type = Puxer::PuxerF64;
+        break;
+
+    case Puxer::PuxerU32:
+        result = std::make_unique<U32ExprAST>(str_tou32(res.ident.value));
+        result.get()->type = Puxer::PuxerU32;
+        break;
+
+    case Puxer::PuxerU64:
+        result = std::make_unique<U64ExprAST>(str_tou64(res.ident.value));
+        result.get()->type = Puxer::PuxerU64;
+        break;
+
+    case Puxer::PuxerNumber:
+        result = std::make_unique<UknownExprAST>(res.ident.value);
+        result.get()->type = Puxer::PuxerNumber;
+        break;
+
+    default:
+        std::cout << "Num val => " << res.ident.value << std::endl;
+        result = std::make_unique<ExprAST>();
+        result.get()->type = Puxer::PuxerBadNumber;
+        break;
+    }
+
+    return std::move(result);
+}
+
+std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
 
 	if (res.token != Puxer::t_identifier) {
 		fprintf(stderr, "Error: Expected funciton name in function definition");
@@ -79,25 +183,40 @@ std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(Puxer::Pux
     return std::move(ret);
 }
 
-std::unique_ptr<Pukser::FunctionAST>  Pukser::Pukser::parse_definition(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+std::unique_ptr<Pukser::FunctionAST> Pukser::Pukser::parse_definition(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
 
     auto prototype = parse_prototype(pux, res = pux.get_token());
 
     if (!prototype)
         return nullptr;
 
-    if (auto E = parse_expression(pux, res = pux.get_token()))
-        return std::make_unique<FunctionAST>(std::move(prototype), std::move(E));
+    res = pux.get_token();
+
+    if (res.token != '{') {
+        fprintf(stderr, "Error: Expected '{' after funciton definition");
+        return nullptr;
+    }
+
+    std::vector<std::unique_ptr<ExprAST>> body;
+    parse_curly(pux, res, body);
+
+    if (!body.empty())
+        return std::make_unique<FunctionAST>(std::move(prototype), std::move(body));
 
     return nullptr;
 }
 
-std::unique_ptr<Pukser::FunctionAST> Pukser::Pukser::parse_toplevel(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+std::unique_ptr<Pukser::FunctionAST> Pukser::Pukser::parse_toplevel(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
 
     if (auto E = parse_expression(pux, res)) {
 
+        std::vector<std::unique_ptr<ExprAST>> body;
+        body.push_back(std::move(E));
+
         auto prototype = std::make_unique<PrototypeAST>("", std::vector<std::string>());
-        return std::make_unique<FunctionAST>(std::move(prototype), std::move(E));
+        return std::make_unique<FunctionAST>(std::move(prototype), std::move(body));
     }
 
     return nullptr;
@@ -142,7 +261,8 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_binary_ops_rhs(
     return nullptr;
 }
 
-std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_expression(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_expression(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
 
     auto LHS = parse_primary(pux, res);
 
@@ -152,44 +272,9 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_expression(Puxer::Puxer& 
     return parse_binary_ops_rhs(pux, res, 0, std::move(LHS));
 }
 
-void Pukser::Pukser::parse(const char* fn) {
-
-    Puxer::Puxer pux;
-    auto res = pux.open_file(fn);
-
-    if (res != 0) {
-        std::cout << "Opening file: " << fn << " failed!";
-    }
-
-    Puxer::PuxerTokenResponse token;
-    token = pux.get_token();
-
-    while (token.token != Puxer::t_eof) {
-
-        //std::cout << "TOKEN(" << token.token << "): " << token.ident.i_name << std::endl;
-
-        switch (token.token) {
-
-            case Puxer::t_number:
-                handle_number(token);
-                break;
-
-            case Puxer::t_fndef:
-                parse_definition(pux, token);
-                break;
-
-            default:
-                parse_toplevel(pux, token);
-                break;
-        }
-
-        //token = pux.get_token();
-    }
-
-}
-
-std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_primary(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
-
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_primary(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+    
     switch (res.token) {
 
         case Puxer::t_number:
@@ -205,13 +290,36 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_primary(Puxer::Puxer& pux
             break;
 
         default:
-            std::cout << "pukova hlava: " << (char)res.token << std::endl;
+            std::cout << "pukova hlava: " << (char)res.token << " " << res.token << std::endl;
             return log_error("Unknown token, expecting expression\n");
             break;
     }
 }
 
-std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_paren(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+void Pukser::Pukser::parse_curly(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res, std::vector<std::unique_ptr<ExprAST>>& body) {
+
+    if (res.token == '}')
+        nullptr;
+
+    while (res.token != '}') {
+
+        auto expr = parse_expression(pux, res = pux.get_token());
+        std::cout << "Parsing Expression" << std::endl;
+
+        if (!expr) {
+            return ;
+        }
+
+        body.push_back(std::move(expr));
+
+    }
+
+    std::cout << "End of function !! " << std::endl;
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_paren(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
 
     auto v = parse_expression(pux, res);
 
@@ -224,12 +332,12 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_paren(Puxer::Puxer& pux, 
     return v;
 }
 
-std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(
+    Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res) {
 
     std::string name_ref = res.ident.i_name;
 
-    Puxer::PuxerTokenResponse tok;
-    tok = pux.get_token();
+    Puxer::PuxerTokenResponse tok = pux.get_token();
 
     //variable ref otherwise a func call
     if (res.token != '(') {
@@ -261,56 +369,4 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(Puxer::Puxer& 
     }
 
     return std::make_unique<CallExprAST>(name_ref, std::move(args));
-}
-
-
-std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerTokenResponse& res) {
-
-    std::unique_ptr<ExprAST> result;
-
-    switch (res.ident.var_type.type) {
-
-        case Puxer::PuxerI32:
-            result = std::make_unique<I32ExprAST>(str_toi32(res.ident.value));
-            result.get()->type = Puxer::PuxerI32;
-            break;
-
-        case Puxer::PuxerI64:
-            result = std::make_unique<I64ExprAST>(str_toi64(res.ident.value));
-            result.get()->type = Puxer::PuxerI64;
-            break;
-
-        case Puxer::PuxerF32:
-            result = std::make_unique<F32ExprAST>(str_tof32(res.ident.value));
-            result.get()->type = Puxer::PuxerF32;
-            break;
-
-        case Puxer::PuxerF64:
-            result = std::make_unique<F64ExprAST>(str_tof64(res.ident.value));
-            result.get()->type = Puxer::PuxerF64;
-            break;
-
-        case Puxer::PuxerU32:
-            result = std::make_unique<U32ExprAST>(str_tou32(res.ident.value));
-            result.get()->type = Puxer::PuxerU32;
-            break;
-
-        case Puxer::PuxerU64:
-            result = std::make_unique<U64ExprAST>(str_tou64(res.ident.value));
-            result.get()->type = Puxer::PuxerU64;
-            break;
-
-        case Puxer::PuxerNumber:
-            result = std::make_unique<UknownExprAST>(res.ident.value);
-            result.get()->type = Puxer::PuxerNumber;
-            break;
-
-        default:
-            std::cout << "Num val => " << res.ident.value << std::endl;
-            result = std::make_unique<ExprAST>();
-            result.get()->type = Puxer::PuxerBadNumber;
-            break;
-    }
-
-    return std::move(result);
 }
