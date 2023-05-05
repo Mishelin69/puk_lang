@@ -2,6 +2,7 @@
 #include "Puxer.h"
 #include "pukser_helper_func.h"
 #include "puxer_helper_defs.h"
+
 #include <memory>
 
 void Pukser::Pukser::parse(const char* fn) {
@@ -150,9 +151,6 @@ std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(
 		return nullptr;
 	}
 
-    auto ret = std::make_unique<PrototypeAST>(fn_name, std::move(arg_names));
-
-    std::string ret_i;
     Puxer::PuxerTokenResponse p;
     p = pux.get_token();
 
@@ -176,9 +174,22 @@ std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(
         return nullptr;
     }
 
+    std::shared_ptr<Puxer::PuxerCustomType> type;
+    
     if (p.ident.var_type.type == Puxer::PuxerCustom) {
-       // += p.ident.var_type.name;
+
+        if (types_map.find(p.ident.var_type.name) == types_map.end()) {
+            std::cout << "Warning: Couldnt find the type definition! Will look more into the file " << (char)p.token << " instead!" << std::endl;
+            
+            types_map.insert({ p.ident.var_type.name, std::make_shared<Puxer::PuxerCustomType>(
+                std::string("NOT FOUND"), Puxer::PuxerCustom, 0)});
+        }
+        else {
+            type = types_map[p.ident.var_type.name];
+        }
     }
+
+    auto ret = std::make_unique<PrototypeAST>(fn_name, std::move(arg_names), type);
 
     return std::move(ret);
 }
@@ -283,6 +294,9 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_primary(
 
         case Puxer::t_identifier:
             return parse_identifier(pux, res);
+            break;
+
+        case Puxer::t_valdef:
             break;
 
         case '(':

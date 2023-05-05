@@ -10,9 +10,12 @@ namespace Puxer {
 
 namespace Pukser {
 
-    static std::map<char, int> BinopPrecedence = {{'<', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
+	static std::map<char, int> BinopPrecedence = { {'=', 2},  {'<', 10}, {'+', 20}, {'-', 20}, {'*', 40}};
 
 	class Pukser {
+
+	private:
+		std::map<std::string, std::shared_ptr<Puxer::PuxerCustomType>> types_map;
 
 	public:
 		void parse(const char* fn);
@@ -22,6 +25,7 @@ namespace Pukser {
         int handle_token_precedence(Puxer::PuxerTokenResponse& res);
 		void handle_toplevel(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		void handle_functiondef(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
+		void handle_valdef(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 
 		std::unique_ptr<ExprAST> parse_expression(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> parse_paren(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
@@ -32,6 +36,7 @@ namespace Pukser {
 		std::unique_ptr<PrototypeAST> parse_prototype(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<FunctionAST> parse_definition(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<FunctionAST> parse_toplevel(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
+		std::unique_ptr<FunctionAST> parse_valdef(Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res);
 	};
 
 }

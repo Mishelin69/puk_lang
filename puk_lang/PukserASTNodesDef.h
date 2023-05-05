@@ -28,6 +28,18 @@ namespace Pukser {
             val(val) { }
     };
 
+	class CustomTypeExprAST: public ExprAST {
+
+	public:
+		Puxer::PuxerCustomType var_info;
+		std::vector<Puxer::PuxerCustomType> members_list;
+
+	public:
+		CustomTypeExprAST(Puxer::PuxerCustomType var_info,
+			std::vector<Puxer::PuxerCustomType> members_list) 
+			: var_info(var_info), members_list(std::move(members_list)) {}
+	};
+
 	/*
 	* Number Nodes
 	*/
@@ -128,15 +140,23 @@ namespace Pukser {
 			: callee(callee), args(std::move(args)) {}
 	};
 
+	class VariableAST {
+
+		Puxer::PuxerType type;
+		std::shared_ptr<Puxer::PuxerCustomType> type_info;
+
+	};
+
 	class PrototypeAST {
 
-        Puxer::PuxerCustomType type;
+		std::shared_ptr<Puxer::PuxerCustomType> type;
 		std::string name;
 		std::vector<std::string> args;
 
 	public:
-		PrototypeAST(const std::string& name, std::vector<std::string> args)
-			: name(name), args(std::move(args)), type(std::string(), Puxer::PuxerUnknown, 0) {}
+		PrototypeAST(const std::string& name, 
+			std::vector<std::string> args, std::shared_ptr<Puxer::PuxerCustomType> type)
+			: name(name), args(std::move(args)), type(type) {}
 
 		const std::string& getName() const { return name; }
 	};
