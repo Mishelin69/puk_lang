@@ -10,6 +10,7 @@ namespace Puxer {
 		PuxerI32,
 		PuxerI64,
 
+		PuxerU8,
 		PuxerU32,
 		PuxerU64,
 
@@ -56,10 +57,11 @@ namespace Puxer {
 
 		std::string name;
 		PuxerType type;
-		size_t bytes_size;
+		size_t bytes_size = 0;
 
+	public:
         PuxerCustomType() = default;
-        PuxerCustomType(PuxerCustomType& other) = default;
+		PuxerCustomType(const PuxerCustomType& other) = default;
         ~PuxerCustomType() = default;
 
         PuxerCustomType(std::string name, PuxerType type, size_t bytes_size):

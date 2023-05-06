@@ -13,8 +13,6 @@
     #define error_code errno_t
 #endif
 
-static const char* VALID_INTEGERS[6] = { "i32", "i64", "u32", "u64", "f32", "f64 "};
-
 Puxer::Puxer::Puxer() {
 
 	this->fs = nullptr;
@@ -61,6 +59,11 @@ Puxer::PuxerToken Puxer::Puxer::PuxerHandleIndentifier(std::string& s, PuxerIden
 	else if (s == "crack") {
 		return PuxerToken::t_crackdef;
 	}
+    else if (s == "None") {
+        i.i_name = s;
+        i.var_type = PuxerCustomType{ "", PuxerType::PuxerNone, sizeof(i.i_name) };
+        return PuxerToken::t_identifier;
+    }
 
 	i.i_name = s;
 	i.var_type = PuxerCustomType{ "", PuxerType::PuxerCustom, sizeof(i.i_name)};
@@ -226,6 +229,7 @@ Puxer::PuxerTokenResponse Puxer::Puxer::get_token() {
     while (isspace(last_char)) {
         last_char = fgetc(this->fs);
     }
+    std::cout << "char => " << last_char << std::endl;
 
     //build the identifier
     if (isalpha(last_char)) {
@@ -369,7 +373,7 @@ number_error:
 
     //comments
     if (last_char == '/') {
-
+        std::cout << "comment!" << std::endl;
         auto next_char = fgetc(this->fs);
         PuxerIdentifier i;
 
@@ -389,6 +393,6 @@ number_error:
     if (last_char == EOF) {
         return PuxerTokenResponse{ PuxerToken::t_eof, i };
     }
-
+ 
     return PuxerTokenResponse{ last_char, i };
 }

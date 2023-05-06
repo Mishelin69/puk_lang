@@ -18,6 +18,16 @@ namespace Pukser {
 		virtual ~ExprAST() = default;
 	};
 
+	class SingleCharExpr : public ExprAST {
+
+	public: 
+		char c;
+
+	public:
+		SingleCharExpr(char c):
+			c(c) {}
+	};
+
     class UknownExprAST: public ExprAST {
 
     public:
@@ -108,10 +118,13 @@ namespace Pukser {
 
 	private:
 		std::string name;
+		Puxer::PuxerType type;
+		std::shared_ptr<Puxer::PuxerCustomType> type_info;
 
 	public:
-		VariableExprAST(std::string name) :
-			name(name) {}
+		VariableExprAST(std::string name, 
+			Puxer::PuxerType type, std::shared_ptr<Puxer::PuxerCustomType> type_info)
+			: name(name), type(type), type_info(type_info) {}
 	};
 
 	//Binary Operation
@@ -138,13 +151,6 @@ namespace Pukser {
 		CallExprAST(const std::string callee,
 			std::vector<std::unique_ptr<ExprAST>> args)
 			: callee(callee), args(std::move(args)) {}
-	};
-
-	class VariableAST {
-
-		Puxer::PuxerType type;
-		std::shared_ptr<Puxer::PuxerCustomType> type_info;
-
 	};
 
 	class PrototypeAST {
