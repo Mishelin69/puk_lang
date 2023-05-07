@@ -16,6 +16,8 @@ namespace Pukser {
 
 	public:
 		virtual ~ExprAST() = default;
+
+		friend class Pukser;
 	};
 
 	class SingleCharExpr : public ExprAST {
@@ -26,6 +28,8 @@ namespace Pukser {
 	public:
 		SingleCharExpr(char c):
 			c(c) {}
+
+		friend class Pukser;
 	};
 
     class UknownExprAST: public ExprAST {
@@ -36,6 +40,8 @@ namespace Pukser {
     public:
         UknownExprAST(std::string val) :
             val(val) { }
+
+		friend class Pukser;
     };
 
 	class CustomTypeExprAST: public ExprAST {
@@ -48,6 +54,8 @@ namespace Pukser {
 		CustomTypeExprAST(Puxer::PuxerCustomType var_info,
 			std::vector<Puxer::PuxerCustomType> members_list) 
 			: var_info(var_info), members_list(std::move(members_list)) {}
+
+		friend class Pukser;
 	};
 
 	/*
@@ -61,6 +69,8 @@ namespace Pukser {
 	public:
 		I32ExprAST(int32_t val) :
 			val(val) {}
+
+		friend class Pukser;
 	};
 
 	class I64ExprAST : public ExprAST {
@@ -71,6 +81,8 @@ namespace Pukser {
 	public:
 		I64ExprAST(int64_t val) :
 			val(val) {}
+
+		friend class Pukser;
 	};
 
 	class F32ExprAST : public ExprAST {
@@ -81,6 +93,8 @@ namespace Pukser {
 	public:
 		F32ExprAST(float val) :
 			val(val) {}
+
+		friend class Pukser;
 	};
 
 	class F64ExprAST : public ExprAST {
@@ -91,6 +105,8 @@ namespace Pukser {
 	public:
 		F64ExprAST(double val) :
 			val(val) {}
+
+		friend class Pukser;
 	};
 
 	class U32ExprAST : public ExprAST {
@@ -101,6 +117,8 @@ namespace Pukser {
 	public:
 		U32ExprAST(uint32_t val) :
 			val(val) {}
+
+		friend class Pukser;
 	};
 
 	class U64ExprAST : public ExprAST {
@@ -111,6 +129,8 @@ namespace Pukser {
 	public:
 		U64ExprAST(uint64_t val) :
 			val(val) {}
+
+		friend class Pukser;
 	};
 
 	//Identifier Node
@@ -125,6 +145,12 @@ namespace Pukser {
 		VariableExprAST(std::string name, 
 			Puxer::PuxerType type, std::shared_ptr<Puxer::PuxerCustomType> type_info)
 			: name(name), type(type), type_info(type_info) {}
+
+		VariableExprAST() = default;
+		VariableExprAST(VariableExprAST& other) = default;
+		~VariableExprAST() = default;
+
+		friend class Pukser;
 	};
 
 	//Binary Operation
@@ -139,6 +165,8 @@ namespace Pukser {
 		BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
 			std::unique_ptr<ExprAST> RHS)
 			: op(op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+
+		friend class Pukser;
 	};
 
 	class CallExprAST : public ExprAST {
@@ -151,6 +179,8 @@ namespace Pukser {
 		CallExprAST(const std::string callee,
 			std::vector<std::unique_ptr<ExprAST>> args)
 			: callee(callee), args(std::move(args)) {}
+
+		friend class Pukser;
 	};
 
 	class PrototypeAST {
@@ -165,6 +195,8 @@ namespace Pukser {
 			: name(name), args(std::move(args)), type(type) {}
 
 		const std::string& getName() const { return name; }
+
+		friend class Pukser;
 	};
 
 	class FunctionAST {
@@ -175,6 +207,8 @@ namespace Pukser {
 		FunctionAST(std::unique_ptr<PrototypeAST> proto,
 			std::vector<std::unique_ptr<ExprAST>> body)
 			: proto(std::move(proto)), body(std::move(body)) {}
+
+		friend class Pukser;
 	};
 
 }

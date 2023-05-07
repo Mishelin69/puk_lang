@@ -50,6 +50,33 @@ void Pukser::Pukser::parse(const char* fn) {
 
 }
 
+void Pukser::Pukser::create_scope() {
+    scope.push(PukserScope());
+}
+
+void Pukser::Pukser::drop_cur_scope() {
+
+    if (scope.empty()) {
+        log_error("Error: cannot drop scope, when none are present");
+        return ;
+    }
+
+    scope.pop();
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::declare_var(VariableExprAST var) {
+
+    if (scope.empty()) {
+
+        globals.insert(var.name, var);
+    }
+
+}
+
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::fetch_var(VariableExprAST var) {
+
+}
+
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::log_error(const char* s) {
 	fprintf(stderr, "Error: %s", s);
 	return nullptr;
@@ -115,10 +142,12 @@ std::shared_ptr<Puxer::PuxerCustomType> Pukser::Pukser::handle_type(Puxer::Puxer
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::handle_number(Puxer::PuxerTokenResponse& res) {
 
     std::unique_ptr<ExprAST> result;
+    std::cout << "Number found!" << std::endl;
 
     switch (res.ident.var_type.type) {
 
     case Puxer::PuxerI32:
+        std::cout << "Type: i32" << std::endl;
         result = std::make_unique<I32ExprAST>(str_toi32(res.ident.value));
         result.get()->type = Puxer::PuxerI32;
         break;
@@ -306,6 +335,7 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_binary_ops_rhs(
 
         //save the operator and get nex token
         int binary_operator = res.token;
+        std::cout << "Binarty OP: " << (char)res.token << std::endl;
         res = pux.get_token();
 
         //get right hand side of the pair
@@ -373,7 +403,12 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_primary(
             break;
 
         case ';':
-            return parse_primary(pux, res = pux.get_token());
+            res = pux.get_token();
+            return nullptr;
+            break;
+
+        case '*':
+            return nullptr;
             break;
 
         default:
@@ -387,23 +422,24 @@ void Pukser::Pukser::parse_curly(
     Puxer::Puxer& pux, Puxer::PuxerTokenResponse& res, std::vector<std::unique_ptr<ExprAST>>& body) {
 
     if (res.token == '}')
-        nullptr;
+        return;
+
+    create_scope();
 
     while (res.token != '}') {
 
-        auto expr = parse_expression(pux, res = pux.get_token());
         std::cout << "Parsing Expression" << std::endl;
+        auto expr = parse_expression(pux, res = pux.get_token());
 
-        if (!expr) {
-            std::cout << "Hm goofy " << res.ident.i_name << res.token << std::endl;
-            return ;
+        if (expr) {
+            body.push_back(std::move(expr));
+            std::cout << "Hm goofy " << res.ident.i_name << " " << res.token << std::endl;
         }
-
-        body.push_back(std::move(expr));
-
     }
 
+    drop_cur_scope();
     std::cout << "End of function !! " << std::endl;
+    res = pux.get_token();
 }
 
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_paren(
@@ -430,8 +466,13 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(
     //variable ref otherwise a func call
     if (res.token != '(') {
 
-        return parse_expression(pux, res);
+        if (res.token == '.') {
+            //IMPLEMENT SOON AS A FEATURE (KINDA BASIC ONE)
+        }
 
+
+
+        return parse_expression(pux, res);
     }
 
     res = pux.get_token();

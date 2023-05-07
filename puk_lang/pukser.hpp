@@ -2,7 +2,9 @@
 
 #include "PukserASTNodesDef.h"
 #include "PuxerTokenResponse.h"
-#include <map>
+#include "PukserScope.h"
+
+#include <stack>
 
 namespace Puxer {
 	class Puxer;
@@ -26,6 +28,8 @@ namespace Pukser {
 
 	private:
 		std::map<std::string, std::shared_ptr<Puxer::PuxerCustomType>> builtin_types;
+		std::map<std::string, VariableExprAST> globals;
+		std::stack<PukserScope> scope;
 
 	public:
 
@@ -35,6 +39,11 @@ namespace Pukser {
 
 		void parse(const char* fn);
 		std::unique_ptr<ExprAST> log_error(const char* s);
+
+		void create_scope();
+		void drop_cur_scope();
+		std::unique_ptr<ExprAST> declare_var(VariableExprAST var);
+		std::unique_ptr<ExprAST> fetch_var(VariableExprAST var);
 
 		std::unique_ptr<ExprAST> handle_number(Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> handle_SCE(char c);

@@ -229,7 +229,6 @@ Puxer::PuxerTokenResponse Puxer::Puxer::get_token() {
     while (isspace(last_char)) {
         last_char = fgetc(this->fs);
     }
-    std::cout << "char => " << last_char << std::endl;
 
     //build the identifier
     if (isalpha(last_char)) {
@@ -287,7 +286,7 @@ Puxer::PuxerTokenResponse Puxer::Puxer::get_token() {
         }
     }
 
-    if (isdigit(last_char) || last_char == '.') {
+    if (isdigit(last_char)) {
 
         PuxerIdentifier i;
         std::string num_string;
@@ -373,7 +372,7 @@ number_error:
 
     //comments
     if (last_char == '/') {
-        std::cout << "comment!" << std::endl;
+
         auto next_char = fgetc(this->fs);
         PuxerIdentifier i;
 
