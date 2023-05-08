@@ -5,7 +5,7 @@ namespace Puxer {
 
 	enum PuxerType {
 
-		PuxerChar,
+		PuxerChar = 0,
 
 		PuxerI32,
 		PuxerI64,
@@ -23,9 +23,10 @@ namespace Puxer {
 		PuxerCustom,
 		PuxerUnknown,
 		PuxerNumber,
-        PuxerBadNumber,
+		PuxerBadNumber,
 		PuxerConstString,
-
+		PuxerFunctionCall,
+		PuxerVariable,
         PuxerNone,
 	};
 

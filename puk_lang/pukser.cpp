@@ -43,6 +43,20 @@ void Pukser::Pukser::parse(const char* fn) {
 
         //token = pux.get_token();
     }
+    for (auto& i : abs_tree) {
+        std::cout << i.get()->expr_type << std::endl;
+
+        if (i.get()->expr_type == ExprBody) {
+            auto id = dynamic_cast<ExpressionBodyAST*>(i.get());
+            for (auto& e : id->body) {
+                if (e.get()->expr_type == UnknownType) {
+                    std::cout << e.get()->type << std::endl;
+                    continue;
+                }
+                std::cout << e.get()->expr_type << std::endl;
+            }
+        }
+    }
     //std::cout << std::endl << "Am of nodes: " << dynamic_cast<ExpressionBodyAST*>((abs_tree[0].get()))->body.size() << std::endl;
 }
 
