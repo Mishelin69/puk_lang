@@ -22,8 +22,6 @@ void Pukser::Pukser::parse(const char* fn) {
 
     while (token.token != Puxer::t_eof) {
 
-        //std::cout << "TOKEN(" << token.token << "): " << token.ident.i_name << std::endl;
-
         switch (token.token) {
 
         case Puxer::t_number:
@@ -45,7 +43,7 @@ void Pukser::Pukser::parse(const char* fn) {
 
         //token = pux.get_token();
     }
-
+    //std::cout << std::endl << "Am of nodes: " << dynamic_cast<ExpressionBodyAST*>((abs_tree[0].get()))->body.size() << std::endl;
 }
 
 void Pukser::Pukser::create_scope() {
@@ -318,11 +316,13 @@ std::unique_ptr<Pukser::FunctionAST> Pukser::Pukser::parse_definition(
         return nullptr;
     }
 
-    std::vector<std::unique_ptr<ExprAST>> body;
-    parse_curly(pux, res, body);
+    auto body = std::make_unique<ExpressionBodyAST>();
+    parse_curly(pux, res, body->body);
 
-    if (!body.empty())
+    if (!body->body.empty()) {
+        abs_tree.push_back(std::move(body));
         return std::make_unique<FunctionAST>(std::move(prototype), std::move(body));
+    }
 
     return nullptr;
 }
@@ -332,8 +332,8 @@ std::unique_ptr<Pukser::FunctionAST> Pukser::Pukser::parse_toplevel(
 
     if (auto E = parse_expression(pux, res)) {
 
-        std::vector<std::unique_ptr<ExprAST>> body;
-        body.push_back(std::move(E));
+        auto body = std::make_unique<ExpressionBodyAST>();
+        body->body.push_back(std::move(E));
 
         auto prototype = std::make_unique<PrototypeAST>("", std::vector<std::string>(), handle_type(res));
         return std::move(std::make_unique<FunctionAST>(std::move(prototype), std::move(body)));

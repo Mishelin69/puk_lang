@@ -153,6 +153,19 @@ namespace Pukser {
 		friend class Pukser;
 	};
 
+    class ExpressionBodyAST : public ExprAST {
+
+    private:
+        std::vector<std::unique_ptr<ExprAST>> body;
+
+    public:
+        ExpressionBodyAST() = default;
+        ExpressionBodyAST(const ExpressionBodyAST& other) = default;
+        ~ExpressionBodyAST() = default;
+
+		friend class Pukser;
+    };
+
 	//Binary Operation
 
 	class BinaryExprAST : public ExprAST {
@@ -201,11 +214,11 @@ namespace Pukser {
 
 	class FunctionAST {
 		std::unique_ptr<PrototypeAST> proto;
-		std::vector<std::unique_ptr<ExprAST>> body;
+		std::unique_ptr<ExprAST> body;
 
 	public:
 		FunctionAST(std::unique_ptr<PrototypeAST> proto,
-			std::vector<std::unique_ptr<ExprAST>> body)
+			std::unique_ptr<ExprAST> body)
 			: proto(std::move(proto)), body(std::move(body)) {}
 
 		friend class Pukser;

@@ -34,6 +34,7 @@ namespace Pukser {
 
         size_t stack_size = 0;
         std::unique_ptr<ExprAST> last_expr;
+        std::vector<std::unique_ptr<ExprAST>> abs_tree;
 
 	public:
 
