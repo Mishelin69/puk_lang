@@ -20,8 +20,6 @@ void Pukser::Pukser::parse(const char* fn) {
     Puxer::PuxerTokenResponse token;
     token = pux.get_token();
 
-    std::unique_ptr<ExprAST> last_expr;
-
     while (token.token != Puxer::t_eof) {
 
         //std::cout << "TOKEN(" << token.token << "): " << token.ident.i_name << std::endl;
@@ -51,7 +49,8 @@ void Pukser::Pukser::parse(const char* fn) {
 }
 
 void Pukser::Pukser::create_scope() {
-    scope.push(PukserScope());
+    PukserScope _scope;
+    scope.push(_scope);
 }
 
 void Pukser::Pukser::drop_cur_scope() {
@@ -67,14 +66,36 @@ void Pukser::Pukser::drop_cur_scope() {
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::declare_var(VariableExprAST var) {
 
     if (scope.empty()) {
+        
+        if (var.type == Puxer::PuxerUnknown || var.type == Puxer::PuxerNumber) {
+            return log_error("Variable without declared types are not allowed in global scope!");
+        }
 
-        globals.insert(var.name, var);
+        globals.insert({var.name, var});
+        stack_size += var.type_info->bytes_size;
+
+        return std::make_unique<VariableExprAST>(globals[var.name]);
     }
 
+    auto cur_scope = scope.top();
+    cur_scope.vars.insert({var.name, var});
+
+    return std::make_unique<VariableExprAST>(cur_scope.vars[var.name]);
 }
 
-std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::fetch_var(VariableExprAST var) {
+std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::fetch_var(std::string& name) {
 
+    if (auto var = globals.find(name); var != globals.end()) {
+        return std::make_unique<VariableExprAST>(var->second);
+    }
+ 
+    PukserScope& cur_scope = scope.top();
+
+    if (auto var = cur_scope.vars.find(name); var != cur_scope.vars.end()) {
+        return std::make_unique<VariableExprAST>(var->second);
+    }   
+
+    return nullptr;
 }
 
 std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::log_error(const char* s) {
@@ -206,9 +227,9 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_valdef(
     res = pux.get_token();
 
 
-    if (res.token == ';')
-        return std::move(std::make_unique<VariableExprAST>(ident_name, 
-            Puxer::PuxerUnknown, nullptr));
+    if (res.token == ';') {
+        return declare_var({ident_name, Puxer::PuxerUnknown, nullptr});
+    }
 
     if (res.token == ':') {
 
@@ -220,10 +241,10 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_valdef(
             return nullptr;
         }
 
-        return std::make_unique<VariableExprAST>(ident_name, type.get()->type, type);
+        return declare_var({ident_name, type.get()->type, type});
     }
 
-    return std::make_unique<VariableExprAST>(ident_name, Puxer::PuxerUnknown, nullptr);
+    return declare_var({ident_name, Puxer::PuxerUnknown, nullptr});
 }
 
 std::unique_ptr<Pukser::PrototypeAST> Pukser::Pukser::parse_prototype(
@@ -470,9 +491,12 @@ std::unique_ptr<Pukser::ExprAST> Pukser::Pukser::parse_identifier(
             //IMPLEMENT SOON AS A FEATURE (KINDA BASIC ONE)
         }
 
-
-
-        return parse_expression(pux, res);
+        if (res.token == '{') {
+            //Initializer list, to be implemented ...
+        }
+        //otherwise some binary operation
+        int valid = handle_token_precedence(res);
+        return parse_binary_ops_rhs(pux, res, valid, std::move(fetch_var(name_ref))); 
     }
 
     res = pux.get_token();

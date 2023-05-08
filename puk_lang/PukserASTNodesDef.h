@@ -147,7 +147,7 @@ namespace Pukser {
 			: name(name), type(type), type_info(type_info) {}
 
 		VariableExprAST() = default;
-		VariableExprAST(VariableExprAST& other) = default;
+		VariableExprAST(const VariableExprAST& other) = default;
 		~VariableExprAST() = default;
 
 		friend class Pukser;

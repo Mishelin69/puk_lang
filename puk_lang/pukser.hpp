@@ -27,9 +27,13 @@ namespace Pukser {
 	class Pukser {
 
 	private:
+
 		std::map<std::string, std::shared_ptr<Puxer::PuxerCustomType>> builtin_types;
 		std::map<std::string, VariableExprAST> globals;
 		std::stack<PukserScope> scope;
+
+        size_t stack_size = 0;
+        std::unique_ptr<ExprAST> last_expr;
 
 	public:
 
@@ -43,7 +47,7 @@ namespace Pukser {
 		void create_scope();
 		void drop_cur_scope();
 		std::unique_ptr<ExprAST> declare_var(VariableExprAST var);
-		std::unique_ptr<ExprAST> fetch_var(VariableExprAST var);
+		std::unique_ptr<ExprAST> fetch_var(std::string& name);
 
 		std::unique_ptr<ExprAST> handle_number(Puxer::PuxerTokenResponse& res);
 		std::unique_ptr<ExprAST> handle_SCE(char c);
