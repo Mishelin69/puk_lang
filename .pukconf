@@ -1,0 +1,6 @@
+clang++-16
+.cpp .cxx !.git
+-O3 $(llvm-config-16 --cxxflags)
+-o puk.o -lm -g
+
+./puk_lang/
