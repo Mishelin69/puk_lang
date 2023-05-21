@@ -8,6 +8,14 @@
 #include <vector>
 
 #include "llvm/IR/Value.h"
+#include <llvm/IR/Constants.h>
+#include <llvm/IR/LLVMContext.h>
+#include <llvm/IR/IRBuilder.h>
+
+static inline llvm::Value* log_error(const char* c) {
+    fprintf(stderr, "Error: %s", c);
+    return nullptr;
+}
 
 namespace Pukser {
 
@@ -39,7 +47,7 @@ namespace Pukser {
 
 	public:
 		virtual ~ExprAST() = default;
-        virtual llvm::Value* gen_code() = 0;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) = 0;
 
 		ExprAST(Puxer::PuxerType type, ExprType expr_type)
 			: type(type), expr_type(expr_type) {}
@@ -61,7 +69,7 @@ namespace Pukser {
 		SingleCharExpr()
 			: ExprAST(Puxer::PuxerChar, Char) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -75,7 +83,7 @@ namespace Pukser {
         UknownExprAST(std::string val) :
             val(val), ExprAST(Puxer::PuxerUnknown, UnknownType) { }
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
     };
@@ -92,7 +100,7 @@ namespace Pukser {
 			: var_info(var_info), members_list(std::move(members_list)), 
 			  ExprAST(Puxer::PuxerCustom, CustomType) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -109,7 +117,7 @@ namespace Pukser {
 		I32ExprAST(int32_t val) :
 			val(val), ExprAST(Puxer::PuxerI32, I32) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -123,7 +131,7 @@ namespace Pukser {
 		I64ExprAST(int64_t val) :
 			val(val), ExprAST(Puxer::PuxerI64, I64) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -137,7 +145,7 @@ namespace Pukser {
 		F32ExprAST(float val) :
 			val(val), ExprAST(Puxer::PuxerF32, F32) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -151,7 +159,7 @@ namespace Pukser {
 		F64ExprAST(double val) :
 			val(val), ExprAST(Puxer::PuxerF64, F64) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -165,7 +173,7 @@ namespace Pukser {
 		U32ExprAST(uint32_t val) :
 			val(val), ExprAST(Puxer::PuxerU32, U32) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -179,7 +187,7 @@ namespace Pukser {
 		U64ExprAST(uint64_t val) :
 			val(val), ExprAST(Puxer::PuxerU64, U64) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -202,7 +210,7 @@ namespace Pukser {
 		VariableExprAST(const VariableExprAST& other) = default;
 		~VariableExprAST() = default;
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -218,7 +226,7 @@ namespace Pukser {
 		ExpressionBodyAST(const ExpressionBodyAST& other);
         ~ExpressionBodyAST() = default;
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
     };
@@ -231,13 +239,19 @@ namespace Pukser {
 		char op;
 		std::unique_ptr<ExprAST> LHS, RHS;
 
+    private:
+        llvm::Value* handle_add(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder);
+        llvm::Value* handle_sub(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder);
+        llvm::Value* handle_mul(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder);
+        llvm::Value* handle_div(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder);
+
 	public:
 		BinaryExprAST(char op, std::unique_ptr<ExprAST> LHS,
 			std::unique_ptr<ExprAST> RHS)
 			: op(op), LHS(std::move(LHS)), RHS(std::move(RHS)), 
 			  ExprAST(Puxer::PuxerNone, BinaryExpr) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
@@ -254,7 +268,7 @@ namespace Pukser {
 			: callee(callee), args(std::move(args)), 
 			  ExprAST(Puxer::PuxerFunctionCall, CallExpr) {}
 
-        virtual llvm::Value* gen_code() override;
+        virtual llvm::Value* gen_code(llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) override;
 
 		friend class Pukser;
 	};
