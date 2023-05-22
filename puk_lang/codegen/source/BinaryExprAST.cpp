@@ -1,8 +1,5 @@
 #include "../header/ASTNodes.hpp"
 
-std::unordered_map<Puxer::PuxerType, std::unordered_map<char, llvm::Value* (llvm::Value*, llvm::Value*, const llvm::Twine&, bool, bool)>> fn_map = {
-    };
-
 llvm::Value* Pukser::BinaryExprAST::handle_add(
         llvm::LLVMContext* ctx, llvm::IRBuilder<>* builder) {
 
